@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Establecer el tamaño para el contenedor principal */
+#root, body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%; /* Asegúrate de que ocupe todo el espacio de la ventana */
+    width: 100%;
+}
+
+canvas {
+    display: block; /* Evitar que tenga espacio adicional */
+    width: 100%;
+    height: 100%;
+}
