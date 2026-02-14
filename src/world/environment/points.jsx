@@ -1,15 +1,12 @@
-import React, { useState, useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
-import { Mesh } from 'three'
+import React, { forwardRef } from 'react';
 
-
-const Points = (props) => {
+const Points = forwardRef(({ count }, ref) => {
     return (
-        <mesh {...props}>
-            <sphereGeometry args={[20, 16, 16]} />
+        <instancedMesh ref={ref} args={[null, null, count]}>
+            <sphereGeometry args={[0.15, 16, 16]} />
             <meshStandardMaterial color="white" />
-        </mesh>
-    )
-}
+        </instancedMesh>
+    );
+});
 
-export default Points
+export default Points;

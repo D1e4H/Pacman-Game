@@ -1,61 +1,68 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useMemo, useRef, useLayoutEffect } from 'react';
+import * as THREE from 'three';
 import map from '../../core/map.json';
-import Pacman from '../entities/pacman.jsx';
 import Wall from '../environment/wall.jsx';
 import Points from '../environment/points.jsx';
+import Ghost from '../entities/ghost.jsx'; // Imagina que tienes estos componentes
+import Pacman from '../entities/pacman.jsx';
+
+const tempObject = new THREE.Object3D();
 
 const Maze = () => {
-    const rows = map.mapa.length;
-    const cols = map.mapa[0].length;
+    const { rows, cols } = useMemo(() => ({
+        rows: map.mapa.length,
+        cols: map.mapa[0].length
+    }), []);
+    
     const offsetX = cols / 2;
     const offsetY = rows / 2;
 
-    const wallsRef = useRef([]); // Ref para almacenar las referencias de las paredes
+    const { walls, points, ghosts, abilities, pacmanPos } = useMemo(() => {
+        const w = [], p = [], g = [], h = [];
+        let pac = [0, 0, 0];
 
-    // Esta función es para agregar las referencias de las paredes al array
-    const addWallRef = (ref) => {
-        if (ref && !wallsRef.current.includes(ref)) {
-            wallsRef.current.push(ref);
-        }
-    };
+        map.mapa.forEach((row, rowIndex) => {
+            row.split('').forEach((char, colIndex) => {
+                const pos = [colIndex - offsetX, -(rowIndex - offsetY), 0];
+                if (char === 'W') w.push(pos);
+                if (char === '.') p.push(pos);
+                if (char === 'H') h.push(pos);
+                if (char === 'G') g.push(pos); // Fantasmas
+                if (char === 'P') pac = pos;   // Posición inicial Pacman
+            });
+        });
+        return { walls: w, points: p, ghosts: g, abilities: h, pacmanPos: pac };
+    }, [offsetX, offsetY]);
+
+    const wallRef = useRef();
+    const pointRef = useRef();
+
+    useLayoutEffect(() => {
+        walls.forEach((pos, i) => {
+            tempObject.position.set(...pos);
+            tempObject.updateMatrix();
+            wallRef.current.setMatrixAt(i, tempObject.matrix);
+        });
+        wallRef.current.instanceMatrix.needsUpdate = true;
+
+        points.forEach((pos, i) => {
+            tempObject.position.set(...pos);
+            tempObject.updateMatrix();
+            pointRef.current.setMatrixAt(i, tempObject.matrix);
+        });
+        pointRef.current.instanceMatrix.needsUpdate = true;
+    }, [walls, points]);
 
     return (
-        <group name="Maze_2D">
-            {map.mapa.map((row, rowIndex) =>
-                row.split('').map((char, colIndex) => {
-                    // En 2D usamos X e Y. 
-                    // Invertimos rowIndex (multiplicando por -1) para que la primera fila salga arriba.
-                    const x = colIndex - offsetX;
-                    const y = -(rowIndex - offsetY);
+        <>
+            <Wall ref={wallRef} count={walls.length} />
 
-                    if (char === 'W') {
-                        return (
-                            <Wall
-                                key={`${rowIndex}-${colIndex}`}
-                                ref={addWallRef} // Agregar cada referencia de pared al array
-                                position={[x, y, 0]}
-                            />
-                        );
-                    }
-                    if (char.trim() === 'P') {
-                        return (
-                            <Pacman
-                                key={`${rowIndex}-${colIndex}`}
-                                wallsRef={wallsRef.current} // Pasamos el array de paredes como prop
-                                position={[x, y, 0]}
-                            />
-                        );
-                    }
-                    if (char.trim() === '.') {
-                        return (
-                            <Points key={`${rowIndex}-${colIndex}`} position={[x, y, 0]} />
-                        );
-                    }
+            <Points ref={pointRef} count={points.length} />
 
-                })
-            )}
-        </group>
+            <Pacman position={pacmanPos} />
+
+        </>
     );
 };
 
-export default React.forwardRef(Maze);
+export default Maze;
